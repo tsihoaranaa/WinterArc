@@ -1,1 +1,22 @@
-
+name: WinterArc
+options:
+  bundleIdPrefix: com.custom
+  deploymentTarget:
+    iOS: "16.0"
+targets:
+  WinterArc:
+    type: application
+    platform: iOS
+    sources:
+      - App
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.custom.winterarc
+        INFOPLIST_KEY_CFBundleDisplayName: "Winter Arc"
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: UIInterfaceOrientationPortrait
+        MARKETING_VERSION: "1.0.0"
+        CURRENT_PROJECT_VERSION: "1"
+        GENERATE_INFOPLIST_FILE: YES
