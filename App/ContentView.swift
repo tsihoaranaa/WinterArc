@@ -17,7 +17,7 @@ class HabitStore: ObservableObject {
         didSet { save() }
     }
     
-    private let storageKey = "WinterArcHabitsData_v1"
+    private let storageKey = "WinterArcHabitsData_90Day"
     
     init() {
         load()
@@ -37,10 +37,6 @@ class HabitStore: ObservableObject {
         habits.append(newHabit)
     }
     
-    func deleteHabit(at offsets: IndexSet) {
-        habits.remove(atOffsets: offsets)
-    }
-    
     private func save() {
         if let encoded = try? JSONEncoder().encode(habits) {
             UserDefaults.standard.set(encoded, forKey: storageKey)
@@ -54,11 +50,11 @@ class HabitStore: ObservableObject {
         } else {
             let today = Self.dateKey(for: Date())
             habits = [
-                Habit(title: "Cold Shower / Plunge", subtitle: "3 mins discipline", icon: "snowflake", colorHex: "#00D2FF", completedDates: [today]),
-                Habit(title: "Heavy Training", subtitle: "60 mins lift or run", icon: "dumbbell.fill", colorHex: "#5E5CE6", completedDates: [today]),
-                Habit(title: "Zero Sugar & Clean Diet", subtitle: "Hit daily protein target", icon: "flame.fill", colorHex: "#0A84FF", completedDates: [today]),
-                Habit(title: "Deep Work & Read", subtitle: "No doomscrolling", icon: "brain.head.profile", colorHex: "#64D2FF", completedDates: []),
-                Habit(title: "Sleep Before 10:30 PM", subtitle: "8 hours recovery", icon: "moon.stars.fill", colorHex: "#30D158", completedDates: [today])
+                Habit(title: "Cold Plunge or Shower", subtitle: "Building mental resilience", icon: "snowflake", colorHex: "#00D2FF", completedDates: [today]),
+                Habit(title: "Hit Hard Training", subtitle: "60 mins physical push", icon: "dumbbell.fill", colorHex: "#5E5CE6", completedDates: [today]),
+                Habit(title: "Clean Eating & Water", subtitle: "Zero cheat meals, stay hydrated", icon: "flame.fill", colorHex: "#0A84FF", completedDates: [today]),
+                Habit(title: "10 Pages Focus Reading", subtitle: "Develop key intellect", icon: "book.fill", colorHex: "#64D2FF", completedDates: []),
+                Habit(title: "Recover Before 10:30 PM", subtitle: "Prioritize sleep & recovery", icon: "moon.stars.fill", colorHex: "#30D158", completedDates: [today])
             ]
         }
     }
@@ -75,6 +71,30 @@ struct ContentView: View {
     @StateObject private var store = HabitStore()
     @State private var selectedDate: Date = Date()
     @State private var showingAddSheet = false
+    
+    // Config: Winter Arc 2026 starts Oct 1, 2026 for 90 Days
+    private let arcStartDate: Date = {
+        var comps = DateComponents()
+        comps.year = 2026
+        comps.month = 10
+        comps.day = 1
+        comps.hour = 0
+        comps.minute = 0
+        return Calendar.current.date(from: comps) ?? Date()
+    }()
+    
+    private var arcProgress: (daysPassed: Int, totalDays: Int, percent: Double) {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let start = calendar.startOfDay(for: arcStartDate)
+        
+        let diff = calendar.dateComponents([.day], from: start, to: today)
+        let daysPassed = max(0, (diff.day ?? 0) + 1) // Count starts from 1 on Oct 1st
+        
+        let totalDays = 90
+        let percent = min(1.0, max(0.0, Double(daysPassed) / Double(totalDays)))
+        return (daysPassed, totalDays, percent)
+    }
     
     private var currentWeekDates: [Date] {
         let calendar = Calendar.current
@@ -97,7 +117,65 @@ struct ContentView: View {
             ScrollView {
                 VStack(spacing: 20) {
                     
-                    // 1. 7-Day Date Strip
+                    // Winter Arc Progress Card (October 1st Milestone Timer)
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("WINTER ARC TIMELINE")
+                                    .font(.caption2.weight(.bold))
+                                    .foregroundStyle(.cyan)
+                                
+                                Text("Day \(arcProgress.daysPassed) / \(arcProgress.totalDays)")
+                                    .font(.title2.weight(.heavy))
+                                    .foregroundStyle(.white)
+                            }
+                            Spacer()
+                            Text("\(Int(arcProgress.percent * 100))%")
+                                .font(.title.bold())
+                                .foregroundStyle(.cyan)
+                        }
+                        
+                        // Custom Ice Progress Bar
+                        GeometryReader { geo in
+                            ZStack(alignment: .leading) {
+                                Capsule()
+                                    .fill(Color.white.opacity(0.12))
+                                    .frame(height: 10)
+                                
+                                Capsule()
+                                    .fill(
+                                        LinearGradient(
+                                            colors: [Color.cyan, Color.blue, Color.indigo],
+                                            startPoint: .leading,
+                                            endPoint: .trailing
+                                        )
+                                    )
+                                    .frame(width: geo.size.width * CGFloat(arcProgress.percent), height: 10)
+                                    .shadow(color: Color.cyan.opacity(0.4), radius: 4, x: 0, y: 0)
+                            }
+                        }
+                        .frame(height: 10)
+                        
+                        HStack {
+                            Text("Started Oct 1, 2026")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            let daysLeft = max(0, arcProgress.totalDays - arcProgress.daysPassed)
+                            Text("\(daysLeft) Days Remaining")
+                                .font(.caption2.weight(.bold))
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .padding(18)
+                    .background(Color(.secondarySystemGroupedBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 22)
+                            .stroke(Color.cyan.opacity(0.15), lineWidth: 1)
+                    )
+                    
+                    // Date picker Strip
                     HStack(spacing: 8) {
                         ForEach(currentWeekDates, id: \.self) { date in
                             let isSelected = Calendar.current.isDate(date, inSameDayAs: selectedDate)
@@ -124,9 +202,8 @@ struct ContentView: View {
                         }
                     }
                     
-                    // 2. Daily Progress Ring + Weekly Streak Chart
+                    // Daily metrics & weekly charts
                     HStack(spacing: 16) {
-                        // Ring Card
                         VStack(spacing: 10) {
                             ZStack {
                                 Circle()
@@ -143,14 +220,14 @@ struct ContentView: View {
                                 VStack(spacing: 2) {
                                     Text("\(Int(completionProgress * 100))%")
                                         .font(.title3.bold())
-                                    Text("LOCKED IN")
+                                    Text("LOCKED")
                                         .font(.system(size: 8, weight: .bold))
                                         .foregroundStyle(.secondary)
                                 }
                             }
                             .frame(width: 90, height: 90)
                             
-                            Text("Daily Protocol")
+                            Text("Protocol Completed")
                                 .font(.caption.weight(.semibold))
                                 .foregroundStyle(.secondary)
                         }
@@ -158,9 +235,8 @@ struct ContentView: View {
                         .background(Color(.secondarySystemGroupedBackground))
                         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
                         
-                        // Weekly Streak Bar Chart
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("7-Day Consistency")
+                            Text("Consistency")
                                 .font(.caption.weight(.semibold))
                                 .foregroundStyle(.secondary)
                             
@@ -187,9 +263,9 @@ struct ContentView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
                     }
                     
-                    // 3. Daily Habits List
+                    // Active habits list
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("Non-Negotiables")
+                        Text("Protocol Tasks")
                             .font(.headline)
                             .padding(.horizontal, 4)
                         
